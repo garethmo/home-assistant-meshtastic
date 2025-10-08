@@ -479,6 +479,46 @@ def _build_local_stats_sensors(
             )
             for node_id, node_info in nodes_with_local_stats.items()
         ]
+
+        entities += [
+            MeshtasticSensor(
+                coordinator=coordinator,
+                entity_description=MeshtasticSensorEntityDescription(
+                    key="stats_heap_total_bytes",
+                    name="Heap Total",
+                    icon="mdi:memory",
+                    native_unit_of_measurement=UnitOfInformation.BYTES,
+                    device_class=SensorDeviceClass.DATA_SIZE,
+                    state_class=SensorStateClass.MEASUREMENT,
+                    value_fn=lambda device: device.coordinator.data[device.node_id]
+                    .get("localStats", {})
+                    .get("heapTotalBytes", None),
+                ),
+                gateway=gateway,
+                node_id=node_id,
+            )
+            for node_id, node_info in nodes_with_local_stats.items()
+        ]
+
+        entities += [
+            MeshtasticSensor(
+                coordinator=coordinator,
+                entity_description=MeshtasticSensorEntityDescription(
+                    key="stats_heap_free_bytes",
+                    name="Heap Free",
+                    icon="mdi:memory",
+                    native_unit_of_measurement=UnitOfInformation.BYTES,
+                    device_class=SensorDeviceClass.DATA_SIZE,
+                    state_class=SensorStateClass.MEASUREMENT,
+                    value_fn=lambda device: device.coordinator.data[device.node_id]
+                    .get("localStats", {})
+                    .get("heapFreeBytes", None),
+                ),
+                gateway=gateway,
+                node_id=node_id,
+            )
+            for node_id, node_info in nodes_with_local_stats.items()
+        ]
     except:  # noqa: E722
         LOGGER.warning("Failed to create local stats entities", exc_info=True)
 
