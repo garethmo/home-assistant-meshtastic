@@ -229,6 +229,7 @@ async def _setup_meshtastic_device(  # noqa: PLR0913
     gateway_node: Mapping[str, Any],
     node: Mapping[str, Any],
     node_id: int,
+    *,
     ignore_via_device: bool = False,
 ) -> None:
     gateway_node_id = cast("int", gateway_node["num"])
@@ -266,11 +267,7 @@ async def _setup_meshtastic_device(  # noqa: PLR0913
         via_device = (DOMAIN, str(gateway_node_id)) if gateway_node_id != node_id else None
 
     # remove via_device when it is set to ourself
-    if (
-        (via_device is not None and int(via_device[1]) == node_id)
-        or (gateway_node_id == node_id)
-        or ignore_via_device
-    ):
+    if (via_device is not None and int(via_device[1]) == node_id) or (gateway_node_id == node_id) or ignore_via_device:
         via_device = None
 
     if existing_device:
