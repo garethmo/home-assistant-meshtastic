@@ -45,15 +45,24 @@ async def setup_platform_entry(
     async_add_entities: AddEntitiesCallback,
     entity_factory: Callable[[typing.Mapping[int, typing.Mapping[str, Any]], MeshtasticData], Iterable[Entity]],
 ) -> None:
-    async_add_entities(entity_factory(get_nodes(entry), entry.runtime_data))
     platform = entity_platform.async_get_current_platform()
+    submitted_unique_ids: set[str] = set()
 
-    def on_coordinator_data_update() -> None:
-        entities = entity_factory(get_nodes(entry), entry.runtime_data)
+    def add_entities_safe(entities: Iterable[Entity]) -> None:
         existing_unique_ids = {e.unique_id for e in platform.entities.values()}
-        new_entities = [s for s in entities if s.unique_id not in existing_unique_ids]
+        new_entities = []
+        for entity in entities:
+            if entity.unique_id not in existing_unique_ids and entity.unique_id not in submitted_unique_ids:
+                new_entities.append(entity)
+                submitted_unique_ids.add(entity.unique_id)
+
         if new_entities:
             async_add_entities(new_entities)
+
+    add_entities_safe(entity_factory(get_nodes(entry), entry.runtime_data))
+
+    def on_coordinator_data_update() -> None:
+        add_entities_safe(entity_factory(get_nodes(entry), entry.runtime_data))
 
     remove_listener = entry.runtime_data.coordinator.async_add_listener(on_coordinator_data_update)
     _remove_listeners[platform.domain][entry.entry_id].append(remove_listener)
