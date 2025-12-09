@@ -79,6 +79,7 @@ class MeshtasticChatMixin:
     def __init__(self) -> None:
         self._history = []
         self._attr_extra_state_attributes = {"history": self._history}
+        self._attr_native_value = None
 
     async def async_added_to_hass(self) -> None:
         """Register callbacks."""

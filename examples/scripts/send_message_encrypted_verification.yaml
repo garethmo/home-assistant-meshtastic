@@ -1,0 +1,142 @@
+alias: Send Meshtastic Message with MQTT Verification (Encrypted)
+description: >-
+  Sends message to a specific node OR broadcasts to a channel, then verifies via
+  MQTT (checks for encrypted packet presence)
+mode: single
+sequence:
+  - variables:
+      my_node_id: "!a0cc64bc"
+      sent_message: "{{ states('input_text.meshtastic_message') | trim }}"
+  - condition: template
+    value_template: "{{ sent_message != '' }}"
+  - target:
+      entity_id: input_text.meshtastic_status
+    data:
+      value: Sending...
+    action: input_text.set_value
+  - parallel:
+      - sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: >-
+                      {{ states('input_select.meshtastic_node_select') ==
+                      'Broadcast' }}
+                sequence:
+                  - variables:
+                      channel_num: "{{ states('input_number.meshtastic_channel') | int }}"
+                      channel_entity: >-
+                        {% set suffix = '_channel_primary' if channel_num == 0
+                        else '_channel_' ~ channel_num %} {% set ns =
+                        namespace(entity=none) %} {% for ent in
+                        integration_entities('meshtastic') %}
+                          {% if ent.endswith(suffix) %}
+                            {% set ns.entity = ent %}
+                          {% endif %}
+                        {% endfor %} {{ ns.entity }}
+                  - choose:
+                      - conditions:
+                          - condition: template
+                            value_template: "{{ channel_entity != none }}"
+                        sequence:
+                          - data:
+                              channel: "{{ channel_entity }}"
+                              message: "{{ sent_message }}"
+                              ack: true
+                            action: meshtastic.broadcast_channel_message
+                          - target:
+                              entity_id: input_text.meshtastic_status
+                            data:
+                              value: Sent broadcast... waiting for MQTT
+                            action: input_text.set_value
+                    default:
+                      - target:
+                          entity_id: input_text.meshtastic_status
+                        data:
+                          value: >-
+                            ❌ Error: Could not find entity for Channel {{
+                            channel_num }}
+                        action: input_text.set_value
+                      - stop: Channel Entity Not Found
+            default:
+              - variables:
+                  selected_name: "{{ states('input_select.meshtastic_node_select') }}"
+                  target_node_id: >-
+                    {% set ns = namespace(node_id=none) %} {% set selected_clean
+                    = selected_name | trim | lower %} {% for state in
+                    states.notify %}
+                      {% if state.entity_id.startswith('notify.mesh_node_') %}
+                        {% set friendly_name = state.name | default('', true) %}
+                        {% if friendly_name.startswith('Node ') %}
+                          {% set clean_name = friendly_name.replace('Node ', '', 1) | trim | lower %}
+                        {% else %}
+                          {% set clean_name = friendly_name | trim | lower %}
+                        {% endif %}
+                        {% if clean_name == selected_clean %}
+                          {% set ns.node_id = state.attributes.node_id %}
+                        {% endif %}
+                      {% endif %}
+                    {% endfor %} {{ ns.node_id }}
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ target_node_id is not none }}"
+                    sequence:
+                      - data:
+                          to: "{{ target_node_id }}"
+                          text: "{{ sent_message }}"
+                          ack: true
+                        action: meshtastic.send_text
+                      - target:
+                          entity_id: input_text.meshtastic_status
+                        data:
+                          value: Sent to {{ selected_name }}... waiting
+                        action: input_text.set_value
+                default:
+                  - target:
+                      entity_id: input_text.meshtastic_status
+                    data:
+                      value: "❌ Node not found: {{ selected_name }}"
+                    action: input_text.set_value
+                  - stop: Node name not found in notify entities
+      - sequence:
+          # Wait for ANY encrypted packet from this node (PKI or Channel)
+          - wait_for_trigger:
+              - topic: msh/ZA/2/e/+/!a0cc64bc
+                trigger: mqtt
+            timeout:
+              seconds: 15
+            continue_on_timeout: true
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ wait.trigger is defined }}"
+                sequence:
+                  - data:
+                      name: 📡 MQTT Encrypted Packet
+                      message: "Encrypted packet detected on {{ wait.trigger.topic }}"
+                      entity_id: input_text.meshtastic_status
+                    action: logbook.log
+                  - target:
+                      entity_id: input_text.meshtastic_status
+                    data:
+                      value: "✓ Confirmed: Encrypted packet sent ({{ now().strftime('%H:%M:%S') }})"
+                    action: input_text.set_value
+            default:
+              - target:
+                  entity_id: input_text.meshtastic_status
+                data:
+                  value: ❌ No MQTT response (timeout)
+                action: input_text.set_value
+  - target:
+      entity_id: input_text.meshtastic_message
+    data:
+      value: ""
+    action: input_text.set_value
+  - delay:
+      seconds: 5
+  - target:
+      entity_id: input_text.meshtastic_status
+    data:
+      value: ""
+    action: input_text.set_value

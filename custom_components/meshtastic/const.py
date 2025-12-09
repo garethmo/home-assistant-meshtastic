@@ -94,11 +94,15 @@ class MeshtasticDomainEventType(enum.StrEnum):
 EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE: Final = "message"
 
 
-class MeshtasticDomainEventData(TypedDict):
-    CONF_DEVICE_ID: str
-    CONF_ENTITY_ID: str | None
-    EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE: str
-    from: str
+MeshtasticDomainEventData = TypedDict(
+    "MeshtasticDomainEventData",
+    {
+        "device_id": str,
+        "entity_id": str | None,
+        EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE: str,
+        "from": str,
+    },
+)
 
 
 # Primary user facing event
