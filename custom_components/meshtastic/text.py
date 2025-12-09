@@ -16,6 +16,7 @@ from .const import (
     EVENT_MESHTASTIC_DOMAIN_EVENT,
     EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE,
     MeshtasticDomainEventType,
+    LOGGER,
 )
 from .entity import GatewayChannelEntity, GatewayDirectMessageEntity
 
@@ -31,13 +32,17 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Meshtastic text entities."""
+    LOGGER.debug("Setting up Meshtastic text platform")
     client = entry.runtime_data.client
     gateway_node = await client.async_get_own_node()
     channels = await client.async_get_channels()
     
+    LOGGER.debug(f"Found {len(channels)} channels")
+
     # Create entities for channels
     entities = []
     for channel in channels:
+        LOGGER.debug(f"Processing channel: {channel}")
         if channel["role"] != "DISABLED":
             entities.append(
                 MeshtasticChannelText(
@@ -60,6 +65,7 @@ async def async_setup_entry(
         )
     )
 
+    LOGGER.debug(f"Adding {len(entities)} text entities")
     async_add_entities(entities)
 
 
