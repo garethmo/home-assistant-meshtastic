@@ -46,6 +46,13 @@ send_text:
         number:
           min: 0
           mode: box
+    hop_limit:
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 7
+          mode: box
 
 
 send_direct_message:

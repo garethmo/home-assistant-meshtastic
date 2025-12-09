@@ -43,7 +43,7 @@ class SerialConnection(StreamingClientTransport, asyncio.Protocol):
             lambda: protocol,
             self._device,
             baudrate=self._baud_rate,
-            exclusive=True,
+            exclusive=not (self._device.startswith("socket://") or self._device.startswith("rfc2217://")),
         )
         writer = StreamWriter(transport, protocol, reader, loop)
         self._reader = reader

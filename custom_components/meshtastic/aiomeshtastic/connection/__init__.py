@@ -255,6 +255,7 @@ class ClientApiConnection:
         response_callback: Callable[[Packet], Awaitable[None]] | None = None,
         reply_id: int | None = None,
         emoji: int | None = None,
+        hop_limit: int | None = None,
     ) -> None | Packet:
         mesh_packet = mesh_pb2.MeshPacket()
         if channel_index is not None:
@@ -268,6 +269,8 @@ class ClientApiConnection:
         if from_node is not None:
             mesh_packet.__setattr__("from", from_node)
         mesh_packet.to = to_node
+        if hop_limit is not None:
+            mesh_packet.hop_limit = hop_limit
         mesh_packet.priority = priority
         mesh_packet.want_ack = ack
         if reply_id is not None:

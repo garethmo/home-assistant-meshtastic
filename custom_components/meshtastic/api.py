@@ -217,6 +217,7 @@ class MeshtasticApiClient:
         channel_index: int | None = None,
         reply_id: int | None = None,
         emoji: int | None = None,
+        hop_limit: int | None = None,
     ) -> bool:
         try:
             await asyncio.wait_for(
@@ -227,6 +228,7 @@ class MeshtasticApiClient:
                     channel_index=channel_index,
                     reply_id=reply_id,
                     emoji=emoji,
+                    hop_limit=hop_limit,
                 ),
                 timeout=30,
             )
