@@ -169,6 +169,13 @@ class MeshtasticChannelText(MeshtasticChatMixin, GatewayChannelEntity, TextEntit
         if channel_entity_id and data.get("entity_id") == channel_entity_id:
              self._add_to_history(data.get("from", "?"), data.get("message", ""), event.time_fired.timestamp())
 
+    @property
+    def suggested_object_id(self) -> str | None:
+        """Return a predictable object ID."""
+        # Clean up name for ID: "Primary Chat" -> "primary_chat"
+        clean_name = self._attr_name.lower().replace(" ", "_")
+        return f"meshtastic_{clean_name}"
+
 
 class MeshtasticDirectMessageText(MeshtasticChatMixin, GatewayDirectMessageEntity, TextEntity):
     """Representation of a Meshtastic Direct Message Chat."""
@@ -222,3 +229,8 @@ class MeshtasticDirectMessageText(MeshtasticChatMixin, GatewayDirectMessageEntit
         
         if dm_entity_id and data.get("entity_id") == dm_entity_id:
              self._add_to_history(data.get("from", "?"), data.get("message", ""), event.time_fired.timestamp())
+
+    @property
+    def suggested_object_id(self) -> str | None:
+        """Return a predictable object ID."""
+        return "meshtastic_direct_message_chat"
