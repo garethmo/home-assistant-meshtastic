@@ -1059,6 +1059,8 @@ class MeshInterface:
         want_ack: bool = False,
         channel_index: int | None = None,
         priority: MeshPacket.Priority | None = None,
+        reply_id: int | None = None,
+        emoji: int | None = None,
     ) -> None:
         if isinstance(destination, MeshNode):
             to_node = destination.id
@@ -1098,6 +1100,8 @@ class MeshInterface:
             priority=priority or (MeshPacket.Priority.RELIABLE if want_ack else MeshPacket.Priority.DEFAULT),
             want_response=False,
             ack=want_ack,
+            reply_id=reply_id,
+            emoji=emoji,
         )
 
     async def _notify_node_update(self, node_id: int) -> None:

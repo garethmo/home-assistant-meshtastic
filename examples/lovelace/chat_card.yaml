@@ -1,0 +1,23 @@
+type: vertical-stack
+cards:
+  - type: entities
+    title: Meshtastic Chat Input
+    entities:
+      - entity: text.meshtastic_primary_chat
+        name: Primary Channel
+      - entity: text.meshtastic_secondary_chat
+        name: Secondary Channel
+
+  - type: markdown
+    title: Primary Channel History
+    content: >
+      {% set history = state_attr('text.meshtastic_primary_chat', 'history') %}
+      {% if history %}
+        {% for msg in history | reverse %}
+        **{{ msg.from }}**: {{ msg.message }}
+        _{{ msg.timestamp | timestamp_custom('%H:%M') }}_
+        ---
+        {% endfor %}
+      {% else %}
+        No messages yet.
+      {% endif %}

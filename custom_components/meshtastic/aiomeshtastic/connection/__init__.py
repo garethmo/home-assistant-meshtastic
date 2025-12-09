@@ -253,6 +253,8 @@ class ClientApiConnection:
         want_response: bool = False,
         ack_callback: Callable[[Packet[mesh_pb2.Routing]], Awaitable[None]] | None = None,
         response_callback: Callable[[Packet], Awaitable[None]] | None = None,
+        reply_id: int | None = None,
+        emoji: int | None = None,
     ) -> None | Packet:
         mesh_packet = mesh_pb2.MeshPacket()
         if channel_index is not None:
@@ -268,6 +270,10 @@ class ClientApiConnection:
         mesh_packet.to = to_node
         mesh_packet.priority = priority
         mesh_packet.want_ack = ack
+        if reply_id is not None:
+            mesh_packet.decoded.reply_id = reply_id
+        if emoji is not None:
+            mesh_packet.decoded.emoji = emoji
 
         to_radio = mesh_pb2.ToRadio()
         to_radio.packet.CopyFrom(mesh_packet)

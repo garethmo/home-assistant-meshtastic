@@ -215,6 +215,8 @@ class MeshtasticApiClient:
         *,
         want_ack: bool = False,
         channel_index: int | None = None,
+        reply_id: int | None = None,
+        emoji: int | None = None,
     ) -> bool:
         try:
             await asyncio.wait_for(
@@ -223,6 +225,8 @@ class MeshtasticApiClient:
                     destination=destination_id,
                     want_ack=want_ack,
                     channel_index=channel_index,
+                    reply_id=reply_id,
+                    emoji=emoji,
                 ),
                 timeout=30,
             )

@@ -65,6 +65,8 @@ ATTR_SERVICE_DATA_TO = "to"
 ATTR_SERVICE_DATA_CHANNEL = "channel"
 ATTR_SERVICE_DATA_FROM = "from"
 ATTR_SERVICE_DATA_ACK = "ack"
+ATTR_SERVICE_DATA_REPLY_ID = "reply_id"
+ATTR_SERVICE_DATA_EMOJI = "emoji"
 
 
 ATTR_SERVICE_SEND_TEXT_DATA_TEXT = "text"
@@ -96,6 +98,7 @@ class MeshtasticDomainEventData(TypedDict):
     CONF_DEVICE_ID: str
     CONF_ENTITY_ID: str | None
     EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE: str
+    from: str
 
 
 # Primary user facing event

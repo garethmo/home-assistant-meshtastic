@@ -9,7 +9,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING
 
 from homeassistant.components.device_tracker import DOMAIN as DEVICE_TRACKER_DOMAIN
-from homeassistant.components.device_tracker import TrackerEntity, TrackerEntityDescription
+from homeassistant.components.device_tracker import SourceType, TrackerEntity, TrackerEntityDescription
 
 from . import MeshtasticData, helpers
 from .entity import MeshtasticNodeEntity
@@ -57,6 +57,7 @@ async def async_unload_entry(
 
 class MeshtasticDeviceTracker(MeshtasticNodeEntity, TrackerEntity):
     entity_description: TrackerEntityDescription
+    _attr_source_type = SourceType.GPS
 
     # according to https://github.com/meshtastic/Meshtastic-Android/issues/893
     _precision_to_meters: typing.Mapping[int, int] = MappingProxyType(
@@ -95,7 +96,6 @@ class MeshtasticDeviceTracker(MeshtasticNodeEntity, TrackerEntity):
         node_id: int,
     ) -> None:
         super().__init__(coordinator, gateway, node_id, DEVICE_TRACKER_DOMAIN, entity_description)
-        self._attr_name = self.coordinator.data[self.node_id].get("user", {}).get("longName", None)
         self._attr_name = None
         self._attr_has_entity_name = True
 

@@ -138,6 +138,7 @@ async def async_setup_message_logger(hass: HomeAssistant, entry: MeshtasticConfi
                 CONF_DEVICE_ID: from_device.id,
                 CONF_TYPE: MeshtasticDomainEventType.MESSAGE_SENT,
                 EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE: message,
+                "from": str(from_node_id),
             }
             if to_channel_entity_id:
                 domain_event_data[CONF_ENTITY_ID] = to_channel_entity_id
@@ -150,6 +151,7 @@ async def async_setup_message_logger(hass: HomeAssistant, entry: MeshtasticConfi
                 CONF_DEVICE_ID: to_device.id,
                 CONF_TYPE: MeshtasticDomainEventType.MESSAGE_RECEIVED,
                 EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE: message,
+                "from": str(from_node_id),
             }
 
             if to_channel_entity_id:
