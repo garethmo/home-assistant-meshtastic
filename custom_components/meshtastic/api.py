@@ -131,6 +131,9 @@ class MeshtasticApiClient:
         self._interface.add_packet_app_listener(
             packet_type=portnums_pb2.PortNum.POSITION_APP, callback=self._on_position, as_dict=True
         )
+        self._interface.add_packet_app_listener(
+            packet_type=portnums_pb2.PortNum.ROUTING_APP, callback=self._on_routing, as_packet=True
+        )
 
     async def connect(self) -> None:
         try:
@@ -327,6 +330,90 @@ class MeshtasticApiClient:
         node_info = {"name": node.long_name}
         event_data[ATTR_EVENT_MESHTASTIC_API_NODE_INFO] = node_info
         self._hass.bus.async_fire(EVENT_MESHTASTIC_API_POSITION, event_data)
+
+    async def _on_routing(self, node: MeshNode, packet: Packet) -> None:
+        """Handle routing packets (ACK/NAK/Read receipts)."""
+        from .const import EVENT_MESHTASTIC_MESSAGE_ACK, EVENT_MESHTASTIC_MESSAGE_READ
+        
+        routing_payload = packet.app_payload
+        if routing_payload is None:
+            return
+        
+        # Get gateway's own node ID
+        gateway_node_id = self._interface._connected_node_info.my_node_num if self._interface._connected_node_info else None
+        
+        # Determine ACK type
+        ack_type = "UNKNOWN"
+        error_name = None
+        
+        if routing_payload.HasField("error_reason"):
+            error = routing_payload.error_reason
+            if error == 0:  # NONE = ACK
+                ack_type = "ACK"
+            else:
+                ack_type = "NAK"
+                # Map error codes to readable names
+                error_names = {
+                    1: "NO_ROUTE",
+                    2: "GOT_NAK",
+                    3: "TIMEOUT",
+                    4: "NO_INTERFACE",
+                    5: "MAX_RETRANSMIT",
+                    6: "NO_CHANNEL",
+                    7: "TOO_LARGE",
+                    8: "NO_RESPONSE",
+                    9: "DUTY_CYCLE_LIMIT",
+                    32: "BAD_REQUEST",
+                    33: "NOT_AUTHORIZED",
+                    34: "PKI_FAILED",
+                    35: "PKI_UNKNOWN_PUBKEY",
+                    36: "ADMIN_BAD_SESSION_KEY",
+                    37: "ADMIN_PUBLIC_KEY_UNAUTHORIZED",
+                }
+                error_name = error_names.get(error, f"ERROR_{error}")
+        elif routing_payload.HasField("route_reply"):
+            ack_type = "ROUTE_REPLY"
+        elif routing_payload.HasField("route_request"):
+            ack_type = "ROUTE_REQUEST"
+        
+        # Get request_id if available (links ACK to original message)
+        request_id = packet.data.request_id if packet.data else 0
+        from_node_id = packet.from_id or 0
+        
+        # Filter out ACKs from our own gateway (implicit ACKs)
+        # Only fire events for ACKs from other nodes (explicit ACKs from destination)
+        if gateway_node_id and from_node_id == gateway_node_id:
+            self._logger.info("Filtered implicit ACK from own gateway (node %s) - this is expected", gateway_node_id)
+            return
+        
+        self._logger.info("Received routing packet: type=%s, from_node=%s, gateway=%s, request_id=%s", 
+                         ack_type, from_node_id, gateway_node_id, request_id)
+        
+        # Build event data using Packet properties
+        event_data = {
+            "message_id": packet.mesh_packet.id if packet.mesh_packet else 0,
+            "request_id": request_id,  # Original message being ACKed
+            "from_node": from_node_id,  # Node sending this ACK (destination node)
+            "to_node": packet.to_id or 0,  # Node receiving this ACK (our gateway)
+            "ack_type": ack_type,
+            "timestamp": packet.rx_time or 0,
+        }
+        
+        if error_name:
+            event_data["error"] = error_name
+        
+        # Fire appropriate event
+        if ack_type in ["ACK", "NAK"]:
+            self._hass.bus.async_fire(EVENT_MESHTASTIC_MESSAGE_ACK, event_data)
+        elif ack_type == "READ":  # Future support for read receipts
+            self._hass.bus.async_fire(EVENT_MESHTASTIC_MESSAGE_READ, event_data)
+        
+        self._logger.info("Explicit ACK from destination node: %s - from_node=%s, to_node=%s, request_id=%s", 
+                          ack_type, event_data["from_node"], event_data["to_node"], request_id)
+
+
+
+
 
     def _modify_position(self, position: dict[str, Any]) -> None:
         if "latitudeI" in position:

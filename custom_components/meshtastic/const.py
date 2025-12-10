@@ -108,6 +108,8 @@ MeshtasticDomainEventData = TypedDict(
 
 # Primary user facing event
 EVENT_MESHTASTIC_DOMAIN_EVENT: EventType[MeshtasticDomainEventData] = EventType(f"{DOMAIN}_event")
+EVENT_MESHTASTIC_MESSAGE_ACK = f"{DOMAIN}_message_ack"
+EVENT_MESHTASTIC_MESSAGE_READ = f"{DOMAIN}_message_read"
 
 
 EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_FROM_NAME: Final = "from_name"
