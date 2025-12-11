@@ -81,6 +81,7 @@ PLATFORMS: list[Platform] = [
     Platform.DEVICE_TRACKER,
     Platform.NOTIFY,
     Platform.TEXT,
+    Platform.BUTTON,
 ]
 
 ENTITY_ID_FORMAT = DOMAIN + ".{}"

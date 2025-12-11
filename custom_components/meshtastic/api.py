@@ -242,6 +242,19 @@ class MeshtasticApiClient:
         else:
             return True
 
+    async def reboot(self, seconds: int = 5) -> None:
+        """Reboot a node after specified seconds."""
+        from .aiomeshtastic.protobuf import admin_pb2
+
+        admin_message = admin_pb2.AdminMessage()
+        admin_message.reboot_seconds = seconds
+        
+        await self._interface.send_admin_message_await_response(
+            node=None,  # None means own node
+            message=admin_message,
+            expect_response=False,
+        )
+
     @property
     def metadata(self) -> Mapping[str, Any]:
         metadata = self._interface.connected_node_metadata()
