@@ -33,6 +33,7 @@ from .const import (
     EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_FROM_NAME,
     EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_MESSAGE,
     EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_PKI,
+    EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_VIA_MQTT,
     MeshtasticDomainEventData,
     MeshtasticDomainEventType,
     MeshtasticDomainMessageLogEventData,
@@ -73,11 +74,14 @@ def async_describe_events(
             if event.data.get(EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_PKI, False)
             else "mdi:message"
         )
+        
+        via_mqtt = event.data.get(EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_VIA_MQTT, False)
+        source_label = "📡 MQTT" if via_mqtt else "📻 LoRA relay"
 
         return {
             LOGBOOK_ENTRY_DOMAIN: DOMAIN,
             LOGBOOK_ENTRY_NAME: entity_name,
-            LOGBOOK_ENTRY_MESSAGE: f"«{message}» by {device_name}",
+            LOGBOOK_ENTRY_MESSAGE: f"«{message}» by {device_name} ({source_label})",
             LOGBOOK_ENTRY_ENTITY_ID: event.data[ATTR_ENTITY_ID],
             LOGBOOK_ENTRY_CONTEXT_ID: event.context_id,
             LOGBOOK_ENTRY_ICON: icon,
@@ -98,6 +102,7 @@ async def async_setup_message_logger(hass: HomeAssistant, entry: MeshtasticConfi
         to_channel_entity_id: str,
         to_dm_entity_id: str,
         message: str,
+        via_mqtt: bool,
     ) -> None:
         if (node_info := entry.runtime_data.client.get_node_info(int(from_node_id))) is not None:
             from_name = f"{node_info.long_name} ({node_info.user_id})"
@@ -109,6 +114,7 @@ async def async_setup_message_logger(hass: HomeAssistant, entry: MeshtasticConfi
             EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_FROM_NAME: from_name,
             EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_PKI: bool(to_dm_entity_id),
             EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_MESSAGE: message,
+            EVENT_MESHTASTIC_MESSAGE_LOG_EVENT_DATA_ATTR_VIA_MQTT: via_mqtt,
         }
         hass.bus.async_fire(event_type=EVENT_MESHTASTIC_DOMAIN_MESSAGE_LOG, event_data=message_log_event_data)
 
@@ -132,6 +138,7 @@ async def async_setup_message_logger(hass: HomeAssistant, entry: MeshtasticConfi
             config_entry_id, gateway_node_id, to, to_device
         )
         message = data["message"]
+        via_mqtt = data.get("via_mqtt", False)
 
         if from_device:
             domain_event_data: MeshtasticDomainEventData = {
@@ -139,6 +146,7 @@ async def async_setup_message_logger(hass: HomeAssistant, entry: MeshtasticConfi
                 CONF_TYPE: MeshtasticDomainEventType.MESSAGE_SENT,
                 EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE: message,
                 "from": str(from_node_id),
+                "via_mqtt": via_mqtt,
             }
             if to_channel_entity_id:
                 domain_event_data[CONF_ENTITY_ID] = to_channel_entity_id
@@ -152,6 +160,7 @@ async def async_setup_message_logger(hass: HomeAssistant, entry: MeshtasticConfi
                 CONF_TYPE: MeshtasticDomainEventType.MESSAGE_RECEIVED,
                 EVENT_MESHTASTIC_DOMAIN_EVENT_DATA_ATTR_MESSAGE: message,
                 "from": str(from_node_id),
+                "via_mqtt": via_mqtt,
             }
 
             if to_channel_entity_id:
@@ -170,6 +179,7 @@ async def async_setup_message_logger(hass: HomeAssistant, entry: MeshtasticConfi
                 to_channel_entity_id,
                 to_dm_entity_id,
                 message,
+                via_mqtt,
             )
 
     def extract_device_and_entity_from_channel(
