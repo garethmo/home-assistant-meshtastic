@@ -91,6 +91,10 @@ class Packet[T]:
         return self.mesh_packet.pki_encrypted if self.mesh_packet is not None else False
 
     @property
+    def via_mqtt(self) -> bool:
+        return self.mesh_packet.via_mqtt if self.mesh_packet is not None else False
+
+    @property
     def channel_index(self) -> int | None:
         return self.mesh_packet.channel if self.mesh_packet is not None else None
 

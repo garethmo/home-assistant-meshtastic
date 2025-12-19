@@ -299,6 +299,7 @@ class MeshtasticApiClient:
                 "to": {"node": to_node, "channel": to_channel},
                 "gateway": self.get_own_node()["num"],
                 "message": packet.app_payload,
+                "via_mqtt": packet.via_mqtt,
             },
         )
 
